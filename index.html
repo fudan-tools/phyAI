@@ -1,0 +1,266 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>物理视角下的AI优化器：从动量到Adam</title>
+
+    <script>
+        window.MathJax = {
+            tex: {
+                inlineMath: [['$', '$'], ['\\(', '\\)']], // 允许使用单美元符号 $ 作为行内公式
+                displayMath: [['$$', '$$'], ['\\[', '\\]']] // 允许使用双美元符号 $$ 作为块级公式
+            }
+        };
+    </script>
+
+    <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+
+    <style>
+        /* 这里保留原本的 CSS 样式，不需要改动 */
+        :root {
+            --primary-color: #2c3e50;
+            --accent-color: #3498db;
+            --physics-bg: #e8f6f3;
+            --physics-border: #1abc9c;
+            --ai-bg: #f4f6f7;
+            --text-color: #333;
+        }
+
+        body {
+            font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            line-height: 1.6;
+            color: var(--text-color);
+            margin: 0;
+            padding: 0;
+            background-color: #fcfcfc;
+        }
+
+        header {
+            background: linear-gradient(135deg, var(--primary-color), #34495e);
+            color: white;
+            padding: 3rem 1rem;
+            text-align: center;
+        }
+
+        header h1 {
+            margin: 0;
+            font-size: 2.5rem;
+            font-weight: 300;
+        }
+
+        header p {
+            font-size: 1.1rem;
+            opacity: 0.9;
+            margin-top: 10px;
+        }
+
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 2rem 1rem;
+        }
+
+        section {
+            margin-bottom: 4rem;
+            background: white;
+            padding: 2rem;
+            border-radius: 12px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+        }
+
+        h2 {
+            border-bottom: 2px solid var(--accent-color);
+            padding-bottom: 0.5rem;
+            color: var(--primary-color);
+        }
+
+        h3 {
+            color: var(--accent-color);
+            margin-top: 1.5rem;
+        }
+
+        .comparison-box {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 20px;
+            margin-top: 1.5rem;
+        }
+
+        .concept-card {
+            flex: 1;
+            min-width: 300px;
+            padding: 1.5rem;
+            border-radius: 8px;
+            border-left: 5px solid #ccc;
+        }
+
+        .physics-card {
+            background-color: var(--physics-bg);
+            border-color: var(--physics-border);
+        }
+
+        .physics-card h4 {
+            color: #16a085;
+            margin-top: 0;
+        }
+
+        .ai-card {
+            background-color: var(--ai-bg);
+            border-color: var(--accent-color);
+        }
+
+        .ai-card h4 {
+            color: #2980b9;
+            margin-top: 0;
+        }
+
+        .note {
+            background-color: #fff3cd;
+            border: 1px solid #ffeeba;
+            padding: 1rem;
+            border-radius: 6px;
+            margin-top: 1rem;
+            font-size: 0.95rem;
+        }
+
+        code {
+            background-color: #eee;
+            padding: 2px 5px;
+            border-radius: 3px;
+            font-family: monospace;
+        }
+
+        .highlight {
+            font-weight: bold;
+            color: #d35400;
+        }
+
+        @media (max-width: 600px) {
+            header h1 { font-size: 1.8rem; }
+            .comparison-box { flex-direction: column; }
+        }
+        .container img {
+            max-width: 90%;        /* 限制最大宽度，留出左右呼吸感 */
+            max-height: 400px;     /* 限制最大高度，防止长图霸屏 */
+            height: auto;          /* 保持图片原始长宽比 */
+            display: block;        /* 设为块级元素以便居中 */
+            margin: 1.5rem auto;   /* 上下留白，左右自动居中 */
+            border-radius: 8px;    /* 增加圆角，更精致 */
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1); /* 添加轻微阴影，增加立体感 */
+            object-fit: contain;   /* 确保图片内容完整显示 */
+        }
+    </style>
+</head>
+<body>
+
+<header>
+    <h1>从大学物理的视角来看深度学习</h1>
+    <p>解析 Momentum, RMSProp 与 Adam 优化器背后的物理思维</p>
+</header>
+
+<div class="container">
+
+    <section>
+        <h2>0x00. 损失函数与重力场的关系</h2>
+        <p>
+            在大学物理中，我们研究一个物体在重力势能场 $U(x)$ 中的运动。物体倾向于向势能最低点运动。
+            在人工智能中，在获得损失函数 $J(\theta)$ 的过程，便可以类比为这样的过程，而我们的参数 $\theta$ 就是那个试图滚向山谷最低点（最优解）的小球。
+        </p>
+        <div style="text-align: center; margin: 20px 0;">
+            <img src="./static/ball1.png">
+        </div>
+        <p>
+            最基础的<strong>随机梯度下降 (SGD)算法</strong> 在进行梯度下降时，这个小球好像没有质量一样，每一步只受当前的“坡度”（梯度）影响：
+            $$ \theta_{t+1} = \theta_t - \eta \nabla J(\theta_t) $$
+            这导致它遇到一个局部平坦区域会停滞，遇到狭窄山谷会疯狂震荡。
+            这样也就导致模型没办法很好地收敛，甚至在没有下降到山底就会停止下降。
+        </p>
+        <img src="./static/ball2.png">
+    </section>
+
+    <section>
+        <h2>0x01. 动量：引入“惯性”</h2>
+        <p>最普通的梯度下降（SGD，随机梯度下降）最大的问题是它没有“记忆”。在物理学中，运动的物体拥有<strong>动量</strong>，即 $p = mv$。动量使物体有<strong>惯性</strong>，使其倾向于保持原本的运动方向。</p>
+
+        <div class="comparison-box">
+            <div class="concept-card physics-card">
+                <h4>🏛️ 大学物理视角</h4>
+                <p>根据牛顿第二定律，物体受力改变速度，而不是直接改变位置：</p>
+                $$ F = ma \Rightarrow F = m \frac{dv}{dt} $$
+                <p>物体的当前速度不仅仅取决于当前的力（重力），还取决于<strong>之前的速度</strong>。当我们向前运动时，受到一个和运动方向相反的力，我们会沿原来方向运动一段距离之后慢慢停下。</p>
+            </div>
+
+            <div class="concept-card ai-card">
+                <h4>🤖 AI 优化器视角</h4>
+                <p>Momentum 优化器引入了速度变量 $v_t$。参数更新不再直接使用梯度，而是更新速度：</p>
+                $$ v_t = \gamma v_{t-1} + \eta \nabla J(\theta_t) $$
+                $$ \theta_{t+1} = \theta_t - v_t $$
+                <p>其中 $\gamma$ (通常为0.9) 类似于<strong>空气阻力系数</strong>的补数。它累积了过去的梯度信息。</p>
+                <p>如果写成代码大概就like this</p>
+                <img src="./static/code.png">
+            </div>
+        </div>
+
+        <div class="note">
+            <strong>💡 从物理思想来理解这个优化器</strong>
+            当小球滚过平坦的平原（梯度接近0）时，SGD会停下来，但Momentum优化器因为有<strong>惯性（$v_{t-1}$）</strong>，会继续向前冲，从而有机会冲出局部极小值。
+        </div>
+    </section>
+
+    <section>
+        <h2>0x02. RMSProp：引入“摩擦/能量耗散”</h2>
+        <p>Momentum优化器解决了速度问题，小球能够冲出局部最低点，但如果坡度极陡，小球会获得过大的动能，导致在谷底运动速度过快甚至飞出跑道。我们需要一种机制来适应地形的“粗糙程度”。</p>
+
+
+        <div class="comparison-box">
+            <div class="concept-card physics-card">
+                <h4>🏛️ 大学物理视角</h4>
+                <p>想象小球在不同介质中运动。在光滑冰面（梯度一致方向）上，阻力小；在泥潭（梯度震荡剧烈）中，阻力大。</p>
+                <p>这类似于<strong>能量耗散</strong>或摩擦力。当环境变化剧烈（梯度幅值很大）时，我们需要增大“阻尼”，强行减速以保持稳定。相当于改变下垫面的介质。</p>
+                <p>也可以类似于骑自行车下坡，在下坡陡的地方需要捏闸避免车速太快，在平地需要蹬车发力（抵消摩擦力）让车骑快一点</p>
+            </div>
+
+            <div class="concept-card ai-card">
+                <h4>🤖 AI 优化器视角</h4>
+                <p>RMSProp 关注梯度的<strong>平方</strong>（类似于物理中的动能项 $v^2$ 或能量）：</p>
+                $$ E[g^2]_t = 0.9 E[g^2]_{t-1} + 0.1 g_t^2 $$
+                $$ \theta_{t+1} = \theta_t - \frac{\eta}{\sqrt{E[g^2]_t + \epsilon}} g_t $$
+                <p>分母中的 $\sqrt{E[g^2]_t}$ 起到了<strong>归一化</strong>作用：坡度越陡（$g_t^2$越大），分母越大，更新步长反而变小。这是一种自适应的学习率。</p>
+                <p>如果写成代码，大概就like this：</p>
+                <img src="./static/code2.png">
+            </div>
+        </div>
+    </section>
+
+    <section>
+        <h2>0x03. Adam：上面两种优化器的结合</h2>
+        <p>Adam (Adaptive Moment Estimation) 是目前最流行的优化器。它的名字来源于“矩估计”，但从物理的视角上来看，它是 Momentum 和 RMSProp 的一个集合。</p>
+
+        <h3>物理的融合</h3>
+        <ul>
+            <li><strong>一阶矩 (First Moment) $m_t$：</strong> 对应<strong>动量/速度</strong>。告诉我们该往哪个方向冲（利用惯性）。</li>
+            <li><strong>二阶矩 (Second Moment) $v_t$：</strong> 对应<strong>未中心化的方差/能量</strong>。告诉我们这里的地形有多陡峭、多复杂（利用自适应阻尼）。</li>
+        </ul>
+
+        <div style="background: #f8f9fa; padding: 20px; border-radius: 8px; margin-top: 20px; border-left: 5px solid var(--primary-color);">
+            <h4 style="margin-top:0">Adam 的核心公式</h4>
+            <p>1. <strong>计算动量 (Momentum)：</strong> $ m_t = \beta_1 m_{t-1} + (1-\beta_1) g_t $</p>
+            <p>2. <strong>计算能量/波动 (RMSProp)：</strong> $ v_t = \beta_2 v_{t-1} + (1-\beta_2) g_t^2 $</p>
+            <p>3. <strong>偏差修正 (Bias Correction)：</strong> $\hat{m}_t = \frac{m_t}{1-\beta_1^t}, \hat{v}_t = \frac{v_t}{1-\beta_2^t}$ (增加时间参数，解决初始时刻为0的问题)</p>
+            <p>4. <strong>参数更新：</strong> $$ \theta_{t+1} = \theta_t - \frac{\eta}{\sqrt{\hat{v}_t} + \epsilon} \hat{m}_t $$</p>
+        </div>
+
+        <p style="margin-top: 20px;">
+            <strong>总结：</strong> Adam 就像一个极其智能的物理小球。它既有<strong>惯性</strong>（Momentum）让它快速穿过平缓区域，又有<strong>自适应摩擦系统</strong>（RMSProp），在遇到陡峭悬崖或剧烈震荡时自动刹车，稳步下降。
+        </p>
+    </section>
+
+</div>
+
+<footer style="text-align: center; padding: 2rem; color: #7f8c8d; font-size: 0.9rem;">
+    <p>Some Code and images are Generated by Gemini</p>
+</footer>
+
+</body>
+</html>

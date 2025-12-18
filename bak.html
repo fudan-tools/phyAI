@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>物理视角下的AI优化器：双势阱演示</title>
+
+    <script>
+        window.MathJax = {
+            tex: { inlineMath: [['$', '$'], ['\\(', '\\)']] }
+        };
+    </script>
+    <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+
+    <style>
+        :root {
+            --primary-color: #2c3e50;
+            --accent-color: #3498db;
+            --text-color: #333;
+        }
+
+        body {
+            font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            color: var(--text-color);
+            margin: 0;
+            padding: 0;
+            background-color: #fcfcfc;
+        }
+
+        header {
+            background: linear-gradient(135deg, var(--primary-color), #34495e);
+            color: white;
+            padding: 2rem 1rem;
+            text-align: center;
+        }
+
+        header h1 { margin: 0; font-size: 2rem; font-weight: 300; }
+
+        .container { max-width: 800px; margin: 0 auto; padding: 1rem; }
+
+        section {
+            margin-bottom: 2rem;
+            background: white;
+            padding: 1.5rem;
+            border-radius: 12px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+        }
+
+        h2 {
+            border-bottom: 2px solid var(--accent-color);
+            padding-bottom: 0.5rem;
+            color: var(--primary-color);
+            font-size: 1.5rem;
+        }
+
+        .note {
+            background-color: #fff3cd;
+            border-left: 5px solid #ffc107;
+            padding: 1rem;
+            border-radius: 4px;
+            margin-top: 1rem;
+            font-size: 0.9rem;
+        }
+
+        /* Canvas 容器 */
+        .canvas-wrapper {
+            position: relative;
+            width: 100%;
+            height: 280px;
+            margin: 20px auto;
+            border: 2px solid #bdc3c7;
+            border-radius: 8px;
+            background-color: #fdfdfd;
+            background-image:
+                    linear-gradient(rgba(0,0,0,0.05) 1px, transparent 1px),
+                    linear-gradient(90deg, rgba(0,0,0,0.05) 1px, transparent 1px);
+            background-size: 20px 20px;
+        }
+
+        canvas {
+            display: block;
+            width: 100%;
+            height: 100%;
+        }
+
+        .canvas-label {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            background: rgba(255,255,255,0.95);
+            padding: 6px 12px;
+            border-radius: 4px;
+            font-size: 0.9rem;
+            font-weight: bold;
+            color: var(--primary-color);
+            border: 1px solid #ddd;
+        }
+
+        .status-badge {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            padding: 6px 12px;
+            border-radius: 4px;
+            font-size: 0.8rem;
+            color: white;
+            font-weight: bold;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+        }
+    </style>
+</head>
+<body>
+
+<header>
+    <h1>深度学习：逃离“局部最优”</h1>
+    <p>可视化 Momentum 如何冲过障碍 vs RMSProp 的局限性</p>
+</header>
+
+<div class="container">
+
+    <section>
+        <h2>0x01. 动量 (Momentum)：惯性突破</h2>
+        <p>
+            小球从左侧高坡滑下，利用积攒的动能（惯性）冲过中间的障碍，落入右侧的全局最优解。
+        </p>
+
+        <div class="note">
+            <strong>✅ 现象：</strong>
+            小球干净利落地冲过山脊。即使中间有阻碍，它也因为之前下坡的速度足够快而没有停下。
+        </div>
+    </section>
+
+    <section>
+        <h2>0x02. RMSProp：陷在坑里</h2>
+        <p>
+            RMSProp 类似于在粘稠液体中运动，阻力很大。它能快速滑到底部，但没有惯性向上爬坡。
+        </p>
+
+        <div class="note">
+            <strong>❌ 现象：</strong>
+            小球滑到左侧坑底后，会迅速减速并稳稳停住（不再疯狂震荡），无法逃离局部最优。
+        </div>
+    </section>
+
+</div>
+
+
+
+</body>
+</html>

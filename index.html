@@ -150,6 +150,50 @@
             box-shadow: 0 4px 12px rgba(0,0,0,0.1); /* 添加轻微阴影，增加立体感 */
             object-fit: contain;   /* 确保图片内容完整显示 */
         }
+        .canvas-wrapper {
+            position: relative;
+            width: 100%;
+            height: 280px;
+            margin: 20px auto;
+            border: 2px solid #bdc3c7;
+            border-radius: 8px;
+            background-color: #fdfdfd;
+            background-image:
+                    linear-gradient(rgba(0,0,0,0.05) 1px, transparent 1px),
+                    linear-gradient(90deg, rgba(0,0,0,0.05) 1px, transparent 1px);
+            background-size: 20px 20px;
+        }
+
+        canvas {
+            display: block;
+            width: 100%;
+            height: 100%;
+        }
+
+        .canvas-label {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            background: rgba(255,255,255,0.95);
+            padding: 6px 12px;
+            border-radius: 4px;
+            font-size: 0.9rem;
+            font-weight: bold;
+            color: var(--primary-color);
+            border: 1px solid #ddd;
+        }
+
+        .status-badge {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            padding: 6px 12px;
+            border-radius: 4px;
+            font-size: 0.8rem;
+            color: white;
+            font-weight: bold;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+        }
     </style>
 </head>
 <body>
@@ -181,7 +225,7 @@
 
     <section>
         <h2>0x01. 动量：引入“惯性”</h2>
-        <p>最普通的梯度下降（SGD，随机梯度下降）最大的问题是它没有“记忆”。在物理学中，运动的物体拥有<strong>动量</strong>，即 $p = mv$。动量使物体有<strong>惯性</strong>，使其倾向于保持原本的运动方向。</p>
+        <p>最普通的梯度下降（SGD，随机梯度下降）最大的问题是它不存储之前的梯度信息。在物理学中，运动的物体拥有<strong>动量</strong>，即 $p = mv$。动量使物体有<strong>惯性</strong>，使其倾向于保持原本的运动方向。</p>
 
         <div class="comparison-box">
             <div class="concept-card physics-card">
@@ -206,6 +250,11 @@
             <strong>💡 从物理思想来理解这个优化器</strong>
             当小球滚过平坦的平原（梯度接近0）时，SGD会停下来，但Momentum优化器因为有<strong>惯性（$v_{t-1}$）</strong>，会继续向前冲，从而有机会冲出局部极小值。
         </div>
+        <div class="canvas-wrapper">
+            <canvas id="canvas-momentum"></canvas>
+            <div class="canvas-label">Momentum 优化器</div>
+            <div id="status-momentum" class="status-badge" style="background:#e74c3c;">Ready</div>
+        </div>
     </section>
 
     <section>
@@ -217,19 +266,25 @@
             <div class="concept-card physics-card">
                 <h4>🏛️ 大学物理视角</h4>
                 <p>想象小球在不同介质中运动。在光滑冰面（梯度一致方向）上，阻力小；在泥潭（梯度震荡剧烈）中，阻力大。</p>
-                <p>这类似于<strong>能量耗散</strong>或摩擦力。当环境变化剧烈（梯度幅值很大）时，我们需要增大“阻尼”，强行减速以保持稳定。相当于改变下垫面的介质。</p>
+                <p>这类似于<strong>能量耗散</strong>或摩擦力。当环境变化剧烈（梯度幅值很大）时，我们需要增大增加下垫面的粗糙程度，强行减速以保持稳定。</p>
                 <p>也可以类似于骑自行车下坡，在下坡陡的地方需要捏闸避免车速太快，在平地需要蹬车发力（抵消摩擦力）让车骑快一点</p>
+
             </div>
 
             <div class="concept-card ai-card">
                 <h4>🤖 AI 优化器视角</h4>
-                <p>RMSProp 关注梯度的<strong>平方</strong>（类似于物理中的动能项 $v^2$ 或能量）：</p>
-                $$ E[g^2]_t = 0.9 E[g^2]_{t-1} + 0.1 g_t^2 $$
-                $$ \theta_{t+1} = \theta_t - \frac{\eta}{\sqrt{E[g^2]_t + \epsilon}} g_t $$
-                <p>分母中的 $\sqrt{E[g^2]_t}$ 起到了<strong>归一化</strong>作用：坡度越陡（$g_t^2$越大），分母越大，更新步长反而变小。这是一种自适应的学习率。</p>
+                <p>RMSProp 关注梯度的<strong>平方</strong>消除梯度正负的影响：</p>
+                $$ Eg^2_t = 0.9 Eg^2_{t-1} + 0.1 g_t^2 $$
+                $$ \theta_{t+1} = \theta_t - \frac{\eta}{\sqrt{Eg^2_t + \epsilon}} g_t $$
+                <p>分母中的 $\sqrt{Eg^2_t}$ 起到了<strong>归一化</strong>作用：坡度越陡（$g_t^2$越大），分母越大，更新步长反而变小。</p>
                 <p>如果写成代码，大概就like this：</p>
                 <img src="./static/code2.png">
             </div>
+        </div>
+        <div class="canvas-wrapper">
+            <canvas id="canvas-rmsprop"></canvas>
+            <div class="canvas-label">RMSProp / 阻尼运动</div>
+            <div id="status-rmsprop" class="status-badge" style="background:#16a085;">Ready</div>
         </div>
     </section>
 
@@ -246,7 +301,7 @@
         <div style="background: #f8f9fa; padding: 20px; border-radius: 8px; margin-top: 20px; border-left: 5px solid var(--primary-color);">
             <h4 style="margin-top:0">Adam 的核心公式</h4>
             <p>1. <strong>计算动量 (Momentum)：</strong> $ m_t = \beta_1 m_{t-1} + (1-\beta_1) g_t $</p>
-            <p>2. <strong>计算能量/波动 (RMSProp)：</strong> $ v_t = \beta_2 v_{t-1} + (1-\beta_2) g_t^2 $</p>
+            <p>2. <strong>计算波动 (RMSProp)：</strong> $ v_t = \beta_2 v_{t-1} + (1-\beta_2) g_t^2 $</p>
             <p>3. <strong>偏差修正 (Bias Correction)：</strong> $\hat{m}_t = \frac{m_t}{1-\beta_1^t}, \hat{v}_t = \frac{v_t}{1-\beta_2^t}$ (增加时间参数，解决初始时刻为0的问题)</p>
             <p>4. <strong>参数更新：</strong> $$ \theta_{t+1} = \theta_t - \frac{\eta}{\sqrt{\hat{v}_t} + \epsilon} \hat{m}_t $$</p>
         </div>
@@ -257,7 +312,196 @@
     </section>
 
 </div>
+<script>
+    class PhysicsSimulator {
+        constructor(canvasId, type) {
+            this.canvas = document.getElementById(canvasId);
+            this.ctx = this.canvas.getContext('2d');
+            this.type = type;
+            this.statusEl = document.getElementById(type === 'momentum' ? 'status-momentum' : 'status-rmsprop');
 
+            // 数学坐标系范围
+            this.worldXMin = -2.2;
+            this.worldXMax = 2.2;
+            this.worldYMin = -1.5;
+            this.worldYMax = 1.5;
+
+            this.init();
+
+            window.addEventListener('resize', () => {
+                this.resize();
+                this.draw();
+            });
+
+            this.loop();
+        }
+
+        init() {
+            this.resize();
+            this.resetBall();
+        }
+
+        resize() {
+            const rect = this.canvas.getBoundingClientRect();
+            const dpr = window.devicePixelRatio || 1;
+            this.canvas.width = rect.width * dpr;
+            this.canvas.height = rect.height * dpr;
+            this.screenWidth = this.canvas.width;
+            this.screenHeight = this.canvas.height;
+        }
+
+        // 坐标映射
+        toScreenX(worldX) {
+            return ((worldX - this.worldXMin) / (this.worldXMax - this.worldXMin)) * this.screenWidth;
+        }
+        toScreenY(worldY) {
+            return this.screenHeight - ((worldY - this.worldYMin) / (this.worldYMax - this.worldYMin)) * this.screenHeight;
+        }
+
+        resetBall() {
+            this.x = -1.8; // 起始点
+            this.vx = 0;
+            this.cacheSqGrad = 0;
+            this.successTimer = 0;
+            this.isStopped = false; // RMSProp 专用：标记是否已经停稳
+            this.statusEl.innerText = "";
+        }
+
+        // 地形函数: x^4 - 2x^2 + 0.2x
+        getH(x) {
+            return Math.pow(x, 4) - 2 * Math.pow(x, 2) + 0.2 * x;
+        }
+
+        // 梯度
+        getGrad(x) {
+            return 4 * Math.pow(x, 3) - 4 * x + 0.2;
+        }
+
+        update() {
+            const grad = this.getGrad(this.x);
+            const dt = 0.016;
+
+            if (this.type === 'momentum') {
+                // === Momentum 逻辑 ===
+                const friction = 0.99;
+                const lr = 0.5;
+
+                this.vx = this.vx * friction - grad * lr * dt;
+                this.x += this.vx;
+
+                // 状态更新
+                if (this.x > 0.5) {
+                    this.statusEl.innerText = "";
+                    // 成功后慢慢停下
+                    this.vx *= 0.98;
+                } else if (this.x > -0.5 && this.x < 0.5) {
+                    this.statusEl.innerText = "";
+                }
+
+                // 重置逻辑
+                if (this.x > 1.0 && Math.abs(this.vx) < 0.01) {
+                    this.successTimer++;
+                    if (this.successTimer > 100) this.resetBall();
+                }
+
+            } else if (this.type === 'rmsprop') {
+                // === RMSProp 逻辑 ===
+
+                // 如果已经判定停稳，就不再计算了，防止微小震荡
+                if (this.isStopped) {
+                    this.successTimer++;
+                    if (this.successTimer > 100) this.resetBall();
+                    return;
+                }
+
+                const beta = 0.9;
+                this.cacheSqGrad = beta * this.cacheSqGrad + (1 - beta) * (grad * grad);
+
+                const lr = 0.05;
+                // 增大 epsilon，这有助于在梯度接近0时稳定数值
+                const epsilon = 1e-4;
+
+                const step = lr * grad / (Math.sqrt(this.cacheSqGrad) + epsilon);
+
+                // 核心修复：防止震荡的逻辑
+                // 1. 如果梯度非常小（说明在谷底）
+                // 2. 并且计算出的步长依然在导致左右横跳
+                if (Math.abs(grad) < 0.05) {
+                    // 强制增加阻尼，让它快速停下
+                    this.x -= step * 0.1;
+
+                    // 如果移动极其微小，直接判定停止
+                    if (Math.abs(step) < 0.005) {
+                        this.isStopped = true;
+                        this.statusEl.innerText = "";
+                    }
+                } else {
+                    // 正常更新
+                    this.x -= step;
+                }
+
+                // 状态显示
+                if (!this.isStopped && this.x < 0) {
+                    this.statusEl.innerText = "";
+                }
+            }
+        }
+
+        draw() {
+            this.ctx.clearRect(0, 0, this.screenWidth, this.screenHeight);
+
+            // 1. 绘制地形
+            this.ctx.beginPath();
+            this.ctx.lineWidth = 3;
+            this.ctx.strokeStyle = "#34495e";
+
+            const step = 0.05;
+            let first = true;
+            for (let wx = this.worldXMin; wx <= this.worldXMax; wx += step) {
+                const sx = this.toScreenX(wx);
+                const sy = this.toScreenY(this.getH(wx));
+                if (first) { this.ctx.moveTo(sx, sy); first = false; }
+                else { this.ctx.lineTo(sx, sy); }
+            }
+            this.ctx.stroke();
+
+            // 2. 绘制小球
+            const ballSx = this.toScreenX(this.x);
+            const ballSy = this.toScreenY(this.getH(this.x));
+
+            this.ctx.beginPath();
+            this.ctx.arc(ballSx, ballSy, 10, 0, Math.PI * 2);
+
+            if (this.type === 'momentum') {
+                this.ctx.fillStyle = "#e74c3c";
+                // 移除了绘制尾巴/线的代码，只保留纯净的小球
+            } else {
+                this.ctx.fillStyle = "#16a085";
+            }
+            this.ctx.fill();
+            this.ctx.stroke();
+
+            // 3. 标记
+            this.ctx.fillStyle = "#7f8c8d";
+            this.ctx.font = "14px Arial";
+            this.ctx.textAlign = "center";
+            this.ctx.fillText("", this.toScreenX(-1), this.toScreenY(this.getH(-1)) + 30);
+            this.ctx.fillText("", this.toScreenX(1), this.toScreenY(this.getH(1)) + 30);
+        }
+
+        loop() {
+            this.update();
+            this.draw();
+            requestAnimationFrame(() => this.loop());
+        }
+    }
+
+    document.addEventListener("DOMContentLoaded", () => {
+        new PhysicsSimulator('canvas-momentum', 'momentum');
+        new PhysicsSimulator('canvas-rmsprop', 'rmsprop');
+    });
+
+</script>
 <footer style="text-align: center; padding: 2rem; color: #7f8c8d; font-size: 0.9rem;">
     <p>Some code and images are Generated by Gemini</p>
 </footer>
